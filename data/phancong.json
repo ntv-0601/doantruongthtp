@@ -1,0 +1,38 @@
+[
+  {
+    "id": "T10",
+    "denNgay": "2026-11-07",
+    "ghiChu": "(Dữ liệu minh họa)",
+    "ketQua": "",
+    "khuVuc": "Sân trước, bồn hoa cổng trường",
+    "laodong": "10A3",
+    "media": [],
+    "trucban": "11A2",
+    "tuNgay": "2026-11-02",
+    "tuan": 10
+  },
+  {
+    "id": "T11",
+    "denNgay": "2026-11-14",
+    "ghiChu": "(Dữ liệu minh họa)",
+    "ketQua": "",
+    "khuVuc": "Vườn trường",
+    "laodong": "10A1",
+    "media": [],
+    "trucban": "12A1",
+    "tuNgay": "2026-11-09",
+    "tuan": 11
+  },
+  {
+    "id": "T9",
+    "denNgay": "2026-10-31",
+    "ghiChu": "(Dữ liệu minh họa)",
+    "ketQua": "dat",
+    "khuVuc": "Sân sau, khu nhà xe",
+    "laodong": "11B1",
+    "media": [],
+    "trucban": "12A3",
+    "tuNgay": "2026-10-26",
+    "tuan": 9
+  }
+]

@@ -1,0 +1,78 @@
+{
+  "db": {
+    "rules": [
+      {
+        "path": "activities",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "diemtuan",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "news",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "phancong",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "vaitro",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "registrations",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "registrations/{self}",
+        "read": "view",
+        "write": "interact"
+      },
+      {
+        "path": "yeucau",
+        "read": "admin",
+        "write": "admin"
+      },
+      {
+        "path": "yeucau/{self}",
+        "read": "interact",
+        "write": "interact"
+      },
+      {
+        "path": "dexuat",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "dexuat/{self}",
+        "read": "view",
+        "write": "interact"
+      },
+      {
+        "path": "xacnhan",
+        "read": "view",
+        "write": "admin"
+      },
+      {
+        "path": "xacnhan/{self}",
+        "read": "view",
+        "write": "interact"
+      }
+    ]
+  },
+  "user": {
+    "scopes": [
+      "profile"
+    ]
+  },
+  "downloads": true,
+  "assets": {}
+}

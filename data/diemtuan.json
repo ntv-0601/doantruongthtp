@@ -1,0 +1,128 @@
+[
+  {
+    "id": "T10-10A1",
+    "hoctap": 25,
+    "lop": "10A1",
+    "nenep": 34,
+    "phongtrao": 14,
+    "tinhnguyen": 7,
+    "tuan": 10
+  },
+  {
+    "id": "T10-10A3",
+    "hoctap": 24,
+    "lop": "10A3",
+    "nenep": 36,
+    "phongtrao": 12,
+    "tinhnguyen": 6,
+    "tuan": 10
+  },
+  {
+    "id": "T10-11A1",
+    "hoctap": 30,
+    "lop": "11A1",
+    "nenep": 40,
+    "phongtrao": 20,
+    "tinhnguyen": 10,
+    "tuan": 10
+  },
+  {
+    "id": "T10-11A2",
+    "hoctap": 27,
+    "lop": "11A2",
+    "nenep": 38,
+    "phongtrao": 18,
+    "tinhnguyen": 9,
+    "tuan": 10
+  },
+  {
+    "id": "T10-11B1",
+    "hoctap": 26,
+    "lop": "11B1",
+    "nenep": 35,
+    "phongtrao": 16,
+    "tinhnguyen": 8,
+    "tuan": 10
+  },
+  {
+    "id": "T10-12A1",
+    "hoctap": 28,
+    "lop": "12A1",
+    "nenep": 37,
+    "phongtrao": 13,
+    "tinhnguyen": 6,
+    "tuan": 10
+  },
+  {
+    "id": "T10-12A3",
+    "hoctap": 29,
+    "lop": "12A3",
+    "nenep": 33,
+    "phongtrao": 17,
+    "tinhnguyen": 7,
+    "tuan": 10
+  },
+  {
+    "id": "T9-10A1",
+    "hoctap": 24,
+    "lop": "10A1",
+    "nenep": 33,
+    "phongtrao": 13,
+    "tinhnguyen": 7,
+    "tuan": 9
+  },
+  {
+    "id": "T9-10A3",
+    "hoctap": 25,
+    "lop": "10A3",
+    "nenep": 36,
+    "phongtrao": 14,
+    "tinhnguyen": 7,
+    "tuan": 9
+  },
+  {
+    "id": "T9-11A1",
+    "hoctap": 30,
+    "lop": "11A1",
+    "nenep": 40,
+    "phongtrao": 20,
+    "tinhnguyen": 10,
+    "tuan": 9
+  },
+  {
+    "id": "T9-11A2",
+    "hoctap": 26,
+    "lop": "11A2",
+    "nenep": 37,
+    "phongtrao": 17,
+    "tinhnguyen": 8,
+    "tuan": 9
+  },
+  {
+    "id": "T9-11B1",
+    "hoctap": 27,
+    "lop": "11B1",
+    "nenep": 36,
+    "phongtrao": 17,
+    "tinhnguyen": 8,
+    "tuan": 9
+  },
+  {
+    "id": "T9-12A1",
+    "hoctap": 27,
+    "lop": "12A1",
+    "nenep": 35,
+    "phongtrao": 12,
+    "tinhnguyen": 6,
+    "tuan": 9
+  },
+  {
+    "id": "T9-12A3",
+    "hoctap": 28,
+    "lop": "12A3",
+    "nenep": 33,
+    "phongtrao": 16,
+    "tinhnguyen": 7,
+    "tuan": 9
+  }
+]

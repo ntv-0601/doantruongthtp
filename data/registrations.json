@@ -1,0 +1,20 @@
+[
+  {
+    "id": "demo-1",
+    "hoTen": "Đoàn viên minh họa",
+    "lop": "10A1",
+    "activities": [
+      "cn-xanh-0811",
+      "toa-dam-khkt-1211"
+    ]
+  },
+  {
+    "id": "demo-2",
+    "hoTen": "Đoàn viên minh họa",
+    "lop": "12A3",
+    "activities": [
+      "cn-xanh-0811",
+      "van-nghe-2011"
+    ]
+  }
+]

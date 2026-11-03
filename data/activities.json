@@ -1,0 +1,90 @@
+[
+  {
+    "id": "5l50kv6btr92u2r0k6uf",
+    "date": "2026-11-12",
+    "desc": "Nơi tham quan, tìm hiểu các CLB có trong trường học",
+    "place": "Tòa nhà đa năng",
+    "points": 5,
+    "slots": 0,
+    "time": "14h30",
+    "title": "Triển lãm nghệ thuật, tham quan các CLB",
+    "type": "khac"
+  },
+  {
+    "id": "bong-da-k11",
+    "date": "2026-10-25",
+    "desc": "(Dữ liệu minh họa)",
+    "place": "Sân trường",
+    "points": 2,
+    "slots": 0,
+    "time": "16h00",
+    "title": "Giải bóng đá nam các chi đoàn khối 11",
+    "type": "thethao"
+  },
+  {
+    "id": "cn-xanh-0811",
+    "date": "2026-11-08",
+    "desc": "Mang găng tay, mũ. Mỗi chi đoàn cử tối thiểu 4 đoàn viên. (Dữ liệu minh họa)",
+    "place": "Tập trung tại cổng trường",
+    "points": 3,
+    "slots": 40,
+    "time": "7h00",
+    "title": "Ngày Chủ nhật xanh: dọn vệ sinh khu dân cư quanh trường",
+    "type": "tinhnguyen"
+  },
+  {
+    "id": "dia-chi-do-1511",
+    "date": "2026-11-15",
+    "desc": "Dọn cỏ, lau bia, thắp hương. Mang găng tay, khăn lau. (Dữ liệu minh họa)",
+    "place": "Nghĩa trang liệt sĩ của địa phương",
+    "points": 4,
+    "slots": 30,
+    "time": "7h30",
+    "title": "Chăm sóc nghĩa trang liệt sĩ, thắp hương tri ân",
+    "type": "diachido"
+  },
+  {
+    "id": "doc-sach-2111",
+    "date": "2026-11-21",
+    "desc": "Mỗi chi đoàn chuẩn bị bài giới thiệu 3 phút. Bài hay được đăng ở Góc đọc sách. (Dữ liệu minh họa)",
+    "place": "Thư viện trường",
+    "points": 2,
+    "slots": 0,
+    "time": "15h00",
+    "title": "Ngày hội đọc: mỗi chi đoàn giới thiệu một cuốn sách",
+    "type": "vanhoadoc"
+  },
+  {
+    "id": "ngoai-khoa-2811",
+    "date": "2026-11-28",
+    "desc": "Đăng ký theo chi đoàn, có giáo viên đi cùng. (Dữ liệu minh họa)",
+    "place": "Tập trung tại sân trường",
+    "points": 3,
+    "slots": 80,
+    "time": "7h00",
+    "title": "Ngoại khóa trải nghiệm làng nghề truyền thống",
+    "type": "ngoaikhoa"
+  },
+  {
+    "id": "toa-dam-khkt-1211",
+    "date": "2026-11-12",
+    "desc": "Chia sẻ cách chọn đề tài, ghi nhật ký nghiên cứu và khai báo sử dụng AI. (Dữ liệu minh họa)",
+    "place": "Phòng STEM",
+    "points": 2,
+    "slots": 30,
+    "time": "15h30",
+    "title": "Tọa đàm ý tưởng nghiên cứu khoa học kỹ thuật",
+    "type": "hocthuat"
+  },
+  {
+    "id": "van-nghe-2011",
+    "date": "2026-11-18",
+    "desc": "Mỗi chi đoàn đăng ký một tiết mục. (Dữ liệu minh họa)",
+    "place": "Hội trường",
+    "points": 5,
+    "slots": 60,
+    "time": "14h00",
+    "title": "Hội diễn văn nghệ chào mừng Ngày Nhà giáo Việt Nam 20/11",
+    "type": "vannghe"
+  }
+]

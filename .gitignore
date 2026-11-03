@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+*.swp
+node_modules/
+# Không đưa dữ liệu thật của học sinh lên kho công khai
+data/private/
+*.xlsx
