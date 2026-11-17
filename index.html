@@ -7,7 +7,7 @@
 /* ---------- hộp thoại đăng nhập & huy hiệu vai trò ---------- */
 .modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(4,12,26,.72);display:grid;place-items:center;padding:16px}
 .modal-card{width:min(440px,100%);padding:24px 24px 22px;display:grid;gap:12px}
-.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .modal-head h3{font:800 1.6rem/1 var(--font-num);text-transform:uppercase}
 .quick-logins{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1.5px dashed var(--stitch)}
 .quick-logins .btn{padding:8px 11px;font-size:.82rem}
@@ -249,8 +249,10 @@ section.block{padding-block:64px 24px}
 .viewer{position:fixed;inset:0;z-index:50;background:rgba(4,10,20,.92);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));color:#fff}
 .viewer .vbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .viewer .vbar b{font:700 1rem var(--font-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.viewer .stage{display:grid;place-items:center;min-height:0;padding:10px 0}
-.viewer .stage img,.viewer .stage video{max-width:100%;max-height:100%;border-radius:8px}
+  
+.viewer .stage{display:flex;flex-direction:column;overflow-y:auto;min-height:0;padding:10px 0}
+.viewer .stage img,.viewer .stage video{max-width:100%;height:auto;margin:auto;border-radius:8px}
+  
 .viewer .vfoot{display:flex;justify-content:center;gap:10px;align-items:center;flex-wrap:wrap}
 .vbtn{appearance:none;border:0;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:10px 14px;font:700 .9rem var(--font-label);text-transform:uppercase;letter-spacing:.07em;display:inline-flex;gap:6px;align-items:center}
 .vbtn:hover{background:rgba(255,255,255,.24)}
