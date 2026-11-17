@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="vi">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
@@ -330,6 +331,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--field);b
 footer{margin-top:64px;border-top:2px dashed var(--stitch)}
 footer .wrap{padding-block:26px 40px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;color:var(--ink-2);font-size:.9rem}
 footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--ink)}
+  .btn-upload {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #1a2533; 
+    color: #a3b1c6;
+    border: 1px solid #2a3b50;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+}
+.btn-upload:hover {
+    background-color: #2a3b50;
+    color: #ffffff;
+}
+.admin{margin-top:28px}
+.admin details{background:var(--patch);border-radius:var(--r);border:1.5px dashed var(--stitch)}
+/* ... các code cũ của bạn bên dưới ... */
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -633,7 +653,11 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
             </table>
           </div>
           <div class="imp-tools" id="local-data-tools" hidden>
-            <button class="btn btn-ghost" type="button" id="btn-export-json"><svg class="ic"><use href="#i-dl"/></svg>Tải JSON cập nhật GitHub</button>
+            <!-- Nút thay thế phần TẢI JSON -->
+            <label for="upload-excel" class="btn-upload">
+              <i class="fas fa-file-excel"></i> TẢI LÊN FILE EXCEL
+            </label>
+          <input type="file" id="upload-excel" accept=".xlsx, .xls" style="display: none;" />
             <button class="btn btn-ghost" type="button" id="btn-reset-demo">Khôi phục dữ liệu gốc</button>
           </div>
         </form>
