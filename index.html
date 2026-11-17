@@ -1981,6 +1981,110 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
     renderAll();
   });
 })();
+  document.getElementById('upload-excel').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    
+    // Thêm 'async' vào đây để có thể dùng 'await' khi lưu vào database
+    reader.onload = async function(event) {
+        // --- BƯỚC 1: ĐỌC EXCEL ---
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        const accounts = [];
+        for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue; 
+            
+            const account = {
+                username: String(row[0] || "").trim().toLowerCase(), // Ép chữ thường
+                password: String(row[1] || "").trim(),
+                role: String(row[2] || "").trim().toLowerCase(),
+                className: (row[3] || "").toString().trim() === "-" ? "" : (row[3] || "").toString().trim().toUpperCase(),
+                fullName: String(row[4] || "").trim()
+            };
+            
+            if(account.username && account.password) {
+                accounts.push(account);
+            }
+        }
+        
+        // --- BƯỚC 2: XỬ LÝ VÀ ĐẨY VÀO HỆ THỐNG ---
+        if (!S.db) {
+            toast("Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.");
+            return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+        
+        // Hiện thông báo đang xử lý
+        const oldLabel = document.querySelector('label[for="upload-excel"]').innerHTML;
+        document.querySelector('label[for="upload-excel"]').innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG LƯU...';
+
+        for (const acc of accounts) {
+            // Chuẩn hóa quyền (Để người dùng gõ "Cờ đỏ", "Admin" trong Excel vẫn nhận đúng code)
+            let roleKey = "member";
+            if (acc.role.includes("admin") || acc.role.includes("bch")) roleKey = "admin";
+            else if (acc.role.includes("cờ đỏ") || acc.role.includes("codo")) roleKey = "codo";
+            else if (acc.role.includes("bí thư") || acc.role.includes("bithu")) roleKey = "bithu";
+            else if (acc.role.includes("giáo viên") || acc.role.includes("gvcn")) roleKey = "gvcn";
+
+            // Bỏ qua nếu tên đăng nhập không đúng định dạng hoặc pass quá ngắn
+            if (!/^[a-z0-9_.-]{3,32}$/.test(acc.username) || acc.password.length < 3) {
+                failCount++;
+                continue;
+            }
+
+            // Bỏ qua nếu tài khoản đã tồn tại trong mảng S.users
+            if (S.users.some(x => String(x.username).toLowerCase() === acc.username)) {
+                failCount++;
+                continue; 
+            }
+
+            const id = "acc-" + acc.username + "-" + Date.now().toString(36);
+            
+            try {
+                // Lưu user vào bảng 'users'
+                await S.db.doc("users/" + id).set({
+                    id: id, 
+                    username: acc.username, 
+                    password: acc.password, 
+                    role: roleKey, 
+                    lop: acc.className, 
+                    hoTen: acc.fullName
+                });
+                
+                // Nếu là bí thư hoặc GVCN, đẩy thêm vào bảng 'vaitro'
+                if (roleKey === "bithu" || roleKey === "gvcn") {
+                    await S.db.doc("vaitro/" + id).set({
+                        vaiTro: roleKey, 
+                        lop: acc.className, 
+                        hoTen: acc.fullName, 
+                        since: new Date().toISOString()
+                    });
+                }
+                successCount++;
+            } catch (err) {
+                failCount++;
+            }
+        }
+        
+        // Thông báo kết quả
+        toast(`Đã nhập thành công: ${successCount} tài khoản. Lỗi/Trùng: ${failCount}.`);
+        
+        // Trả lại giao diện nút bấm và reset input
+        document.querySelector('label[for="upload-excel"]').innerHTML = oldLabel;
+        document.getElementById('upload-excel').value = ""; 
+    };
+    
+    reader.readAsArrayBuffer(file);
+});
 </script>
 
 </body>
