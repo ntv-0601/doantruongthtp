@@ -1846,13 +1846,14 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
   const timer=setTimeout(()=>{ if (!Object.values(S.loaded).some(Boolean)){ Object.keys(S.loaded).forEach(k=>S.loaded[k]=true); renderAll(); connNote("Chưa tải được dữ liệu của Đoàn trường. Kiểm tra kết nối mạng rồi mở lại trang."); } },10000);
   // Dán cấu hình Firebase của bạn vào đây
   const firebaseConfig = {
-    apiKey: "DÁN_API_KEY_CỦA_BẠN",
-    authDomain: "DÁN_AUTH_DOMAIN",
-    projectId: "DÁN_PROJECT_ID",
-    storageBucket: "DÁN_STORAGE_BUCKET",
-    messagingSenderId: "DÁN_SENDER_ID",
-    appId: "DÁN_APP_ID"
-  };
+  apiKey: "AIzaSyDMhtecz_lJIGXXRaYi_fBq3xB72PUUVPU",
+  authDomain: "doantruong-d8d36.firebaseapp.com",
+  projectId: "doantruong-d8d36",
+  storageBucket: "doantruong-d8d36.firebasestorage.app",
+  messagingSenderId: "1053997515828",
+  appId: "1:1053997515828:web:fa449652e4a3ad904cf661",
+  measurementId: "G-L94H8L9STV"
+};
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
