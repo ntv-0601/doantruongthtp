@@ -1920,7 +1920,7 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
       renderAll();
     });
   });
-})();
+
   document.getElementById('upload-excel').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -2025,6 +2025,7 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
     
     reader.readAsArrayBuffer(file);
 });
+})();
 </script>
 </body>
 </html>
