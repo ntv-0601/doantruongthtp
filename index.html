@@ -2,6 +2,8 @@
 <html lang="vi">
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
@@ -1918,19 +1920,6 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
       renderAll();
     });
   });
-  Promise.all([window.claude.use("db"), window.claude.use("user")]).then(async ([db,user])=>{
-    if (!db){ clearTimeout(timer); Object.keys(S.loaded).forEach(k=>S.loaded[k]=true); renderAll(); connNote("Đăng nhập claude.ai và mở trang từ đường dẫn được chia sẻ để xem lịch, đăng ký và theo dõi thi đua."); return; }
-    S.db=db; S.user=user;
-    if (user){ try{ S.me=await user.id(); S.admin=await user.canEdit(); S.isOwner=await user.isOwner(); S.canWrite=await user.can("data.write"); }catch(e){} }
-    if (S.admin){ try{ S.dl=await window.claude.use("downloads"); }catch(e){ S.dl=null; } try{ S.assets=await window.claude.use("assets"); }catch(e){ S.assets=null; } }
-    if (S.admin) wireAdmin();
-    const sub=(col,key)=>db.collection(col).onSnapshot(snap=>{ clearTimeout(timer); S[key]=snap.docs.map(d=>Object.assign({id:d.id},d.data())); S.loaded[key]=true; renderAll(); }, err=>{ S.loaded[key]=true; renderAll(); connNote("Một phần dữ liệu chưa tải được. Mở lại trang sau ít phút."); });
-    sub("activities","acts"); sub("diemtuan","teams"); sub("news","news"); sub("registrations","regs"); sub("phancong","duty"); sub("vaitro","roles");
-    if (S.me){ sub("dexuat","props"); sub("xacnhan","confs"); }
-    if (S.admin){ sub("yeucau","requests"); }
-    else if (S.me){ db.doc("yeucau/"+S.me).onSnapshot(sn=>{ S.myReq=sn.exists?sn.data():null; renderAll(); },()=>{}); }
-    renderAll();
-  });
 })();
   document.getElementById('upload-excel').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -2036,33 +2025,6 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
     
     reader.readAsArrayBuffer(file);
 });
-</script>
-<!-- 1. Tải thư viện Firebase (Dùng phiên bản compat để tương thích với code cũ của bạn) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-<script>
-  // 2. Dán Firebase Config bạn vừa copy ở Bước 3 vào đây
-  const firebaseConfig = {
-  apiKey: "AIzaSyDMhtecz_lJIGXXRaYi_fBq3xB72PUUVPU",
-  authDomain: "doantruong-d8d36.firebaseapp.com",
-  projectId: "doantruong-d8d36",
-  storageBucket: "doantruong-d8d36.firebasestorage.app",
-  messagingSenderId: "1053997515828",
-  appId: "1:1053997515828:web:fa449652e4a3ad904cf661",
-  measurementId: "G-L94H8L9STV"
-};
-
-  // 3. Khởi tạo Firebase
-  firebase.initializeApp(firebaseConfig);
-
-  // 4. Gán S.db để kết nối trực tiếp lên Cloud thay vì dùng local giả lập
-  window.S = window.S || {};
-  S.db = firebase.firestore();
-  S.storage = firebase.storage(); // Dùng cái này nếu bạn có code upload ảnh
-
-  console.log("🔥 Đã kết nối Firebase Cloud Database!");
 </script>
 </body>
 </html>
