@@ -1844,129 +1844,79 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
   $("week-sel").addEventListener("change",e=>{S.week=e.target.value;renderAll();});
   renderAll();
   const timer=setTimeout(()=>{ if (!Object.values(S.loaded).some(Boolean)){ Object.keys(S.loaded).forEach(k=>S.loaded[k]=true); renderAll(); connNote("Chưa tải được dữ liệu của Đoàn trường. Kiểm tra kết nối mạng rồi mở lại trang."); } },10000);
-  if (!window.claude || !window.claude.use){
-    /* Chế độ chạy độc lập (GitHub Pages / máy chủ tĩnh): dùng dữ liệu khởi tạo từ data/*.json + lưu trữ cục bộ LocalStorage */
-    S.localMode = true;
-    const DEFAULT_USERS = [
-      {id:"acc-admin", username:"admin", password:"123", role:"admin", hoTen:"Quản trị viên Ban Chấp hành", lop:""},
-      {id:"acc-admin2", username:"admin_bch", password:"admin123", role:"admin", hoTen:"Ban Chấp hành Đoàn trường", lop:""},
-      {id:"acc-codo", username:"codo", password:"123", role:"codo", hoTen:"Đội Cờ đỏ Trực ban", lop:""},
-      {id:"acc-codo1", username:"codo1", password:"codo123", role:"codo", hoTen:"Cờ đỏ Trực ban 1", lop:"11A2"},
-      {id:"acc-bithu-11a2", username:"bithu11a2", password:"123456", role:"bithu", hoTen:"Bí thư Chi đoàn 11A2", lop:"11A2"},
-      {id:"acc-dv-10a1", username:"doanvien", password:"123456", role:"member", hoTen:"Đoàn viên 10A1", lop:"10A1"}
-    ];
-    const store = {};
-    const listeners = {};
-    const notify = col => {
-      const rows = store[col] || [];
-      (listeners[col]||[]).forEach(fn => fn({docs: rows.map(r=>({id:r.id, exists:true, data:()=>Object.assign({},r)}))}));
-    };
-    const saveCol = col => {
-      try{ localStorage.setItem("dt_db_"+col, JSON.stringify(store[col]||[])); }catch(e){}
-      notify(col);
-    };
-    const localDb = {
-      collection: col => ({
-        onSnapshot: cb => {
-          (listeners[col]||(listeners[col]=[])).push(cb);
-          if (store[col]) cb({docs: store[col].map(r=>({id:r.id, exists:true, data:()=>Object.assign({},r)}))});
-        },
-        add: async data => {
-          const id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-          const rec = Object.assign({id}, data);
-          store[col] = [...(store[col]||[]), rec];
-          saveCol(col);
-          return {id};
-        }
-      }),
-      doc: path => {
-        const [col, id] = path.split("/");
-        return {
-          set: async data => {
-            const list = [...(store[col]||[])];
-            const idx = list.findIndex(x=>x.id===id);
-            const rec = Object.assign({id}, data);
-            if (idx>=0) list[idx]=rec; else list.push(rec);
-            store[col] = list;
-            saveCol(col);
-          },
-          update: async patch => {
-            const list = [...(store[col]||[])];
-            const idx = list.findIndex(x=>x.id===id);
-            if (idx>=0){ list[idx] = Object.assign({}, list[idx], patch); store[col]=list; saveCol(col); }
-          },
-          delete: async () => {
-            store[col] = (store[col]||[]).filter(x=>x.id!==id);
-            saveCol(col);
-          },
-          onSnapshot: cb => {
-            (listeners[col]||(listeners[col]=[])).push(()=>{
-              const found = (store[col]||[]).find(x=>x.id===id);
-              cb({exists:!!found, data:()=>found?Object.assign({},found):null});
-            });
-          }
-        };
-      }
-    };
-    S.db = localDb;
-    S.dl = {
-      save: async ({filename, data}) => {
-        const url = URL.createObjectURL(data);
-        const a = document.createElement("a"); a.href=url; a.download=filename;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url), 5000);
-      }
-    };
-    S.assets = {
-      upload: async blob => {
-        const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-        const dataUrl = await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(blob); });
-        try{ localStorage.setItem("dt_blob_"+id, dataUrl); }catch(e){}
-        return {id, dataUrl};
-      },
-      delete: async id => { localStorage.removeItem("dt_blob_"+id); }
-    };
-    wireAdmin();
+  // Dán cấu hình Firebase của bạn vào đây
+  const firebaseConfig = {
+    apiKey: "DÁN_API_KEY_CỦA_BẠN",
+    authDomain: "DÁN_AUTH_DOMAIN",
+    projectId: "DÁN_PROJECT_ID",
+    storageBucket: "DÁN_STORAGE_BUCKET",
+    messagingSenderId: "DÁN_SENDER_ID",
+    appId: "DÁN_APP_ID"
+  };
 
-    const MAP={activities:"acts",diemtuan:"teams",news:"news",registrations:"regs",phancong:"duty",vaitro:"roles",dexuat:"props",xacnhan:"confs",yeucau:"requests",users:"users"};
-    const sub=(col,key)=>localDb.collection(col).onSnapshot(snap=>{
-      S[key]=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      S.loaded[key]=true;
-      renderAll();
-    });
-    Object.entries(MAP).forEach(([col,key])=>sub(col,key));
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  S.db = db;
+  S.localMode = true; // Giữ giao diện đăng nhập tài khoản cục bộ
 
-    Promise.all(Object.keys(MAP).map(async col => {
-      const cached = localStorage.getItem("dt_db_"+col);
-      if (cached){
-        try{ const parsed = JSON.parse(cached); if (Array.isArray(parsed)){ store[col]=parsed; notify(col); return; } }catch(e){}
-      }
-      const rows = await fetch("data/"+col+".json").then(r=>r.ok?r.json():[]).catch(()=>[]);
-      if (col==="users"){
-        store[col] = (Array.isArray(rows) && rows.length) ? rows : DEFAULT_USERS;
-      } else {
-        store[col] = Array.isArray(rows) ? rows : [];
-      }
-      saveCol(col);
-    })).then(()=>{
+  const DEFAULT_USERS = [
+    {id:"acc-admin", username:"admin", password:"123", role:"admin", hoTen:"Quản trị viên Ban Chấp hành", lop:""},
+    {id:"acc-admin2", username:"admin_bch", password:"admin123", role:"admin", hoTen:"Ban Chấp hành Đoàn trường", lop:""},
+    {id:"acc-codo", username:"codo", password:"123", role:"codo", hoTen:"Đội Cờ đỏ Trực ban", lop:""},
+    {id:"acc-codo1", username:"codo1", password:"codo123", role:"codo", hoTen:"Cờ đỏ Trực ban 1", lop:"11A2"},
+    {id:"acc-bithu-11a2", username:"bithu11a2", password:"123456", role:"bithu", hoTen:"Bí thư Chi đoàn 11A2", lop:"11A2"},
+    {id:"acc-dv-10a1", username:"doanvien", password:"123456", role:"member", hoTen:"Đoàn viên 10A1", lop:"10A1"}
+  ];
+
+  S.dl = {
+    save: async ({filename, data}) => {
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a"); a.href=url; a.download=filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    }
+  };
+
+  // Lưu ảnh trực tiếp dạng nén vào Firestore (không cần bật gói trả phí Storage)
+  S.assets = {
+    upload: async blob => {
+      const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      const dataUrl = await new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(blob); });
+      return {id, dataUrl};
+    },
+    delete: async () => {}
+  };
+
+  wireAdmin();
+
+  const MAP = {activities:"acts", diemtuan:"teams", news:"news", registrations:"regs", phancong:"duty", vaitro:"roles", dexuat:"props", xacnhan:"confs", yeucau:"requests", users:"users"};
+
+  // Lắng nghe dữ liệu thời gian thực từ Firebase Cloud
+  Object.entries(MAP).forEach(([col, key]) => {
+    db.collection(col).onSnapshot(snap => {
       clearTimeout(timer);
-      Object.keys(S.loaded).forEach(k=>S.loaded[k]=true);
+      S[key] = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+      S.loaded[key] = true;
+
+      // Tự động tạo các tài khoản mặc định lên Firebase nếu database đang trống
+      if (col === "users" && S.users.length === 0) {
+        DEFAULT_USERS.forEach(u => db.doc("users/" + u.id).set(u));
+      }
+
+      // Khôi phục phiên đăng nhập nếu người dùng vừa F5 tải lại trang
       const savedUid = localStorage.getItem("dt_session_uid");
-      if (savedUid){
-        const acc = (store.users||[]).find(u=>u.id===savedUid);
-        if (acc){
-          S.currentUser = acc;
-          S.me = acc.id;
-          S.names[acc.id] = acc.hoTen||acc.username;
-          S.admin = (acc.role==="admin"||acc.role==="owner"||acc.role==="bch");
-          S.isOwner = (acc.username==="admin"||acc.role==="owner");
+      if (col === "users" && savedUid && !S.currentUser) {
+        const acc = S.users.find(u => u.id === savedUid);
+        if (acc) {
+          S.currentUser = acc; S.me = acc.id; S.names[acc.id] = acc.hoTen || acc.username;
+          S.admin = (acc.role === "admin" || acc.role === "owner" || acc.role === "bch");
+          S.isOwner = (acc.username === "admin" || acc.role === "owner");
           S.canWrite = true;
         }
       }
       renderAll();
     });
-    return;
-  }
+  });
   Promise.all([window.claude.use("db"), window.claude.use("user")]).then(async ([db,user])=>{
     if (!db){ clearTimeout(timer); Object.keys(S.loaded).forEach(k=>S.loaded[k]=true); renderAll(); connNote("Đăng nhập claude.ai và mở trang từ đường dẫn được chia sẻ để xem lịch, đăng ký và theo dõi thi đua."); return; }
     S.db=db; S.user=user;
