@@ -2086,6 +2086,32 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
     reader.readAsArrayBuffer(file);
 });
 </script>
+<!-- 1. Tải thư viện Firebase (Dùng phiên bản compat để tương thích với code cũ của bạn) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
+<script>
+  // 2. Dán Firebase Config bạn vừa copy ở Bước 3 vào đây
+  const firebaseConfig = {
+  apiKey: "AIzaSyDMhtecz_lJIGXXRaYi_fBq3xB72PUUVPU",
+  authDomain: "doantruong-d8d36.firebaseapp.com",
+  projectId: "doantruong-d8d36",
+  storageBucket: "doantruong-d8d36.firebasestorage.app",
+  messagingSenderId: "1053997515828",
+  appId: "1:1053997515828:web:fa449652e4a3ad904cf661",
+  measurementId: "G-L94H8L9STV"
+};
+
+  // 3. Khởi tạo Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // 4. Gán S.db để kết nối trực tiếp lên Cloud thay vì dùng local giả lập
+  window.S = window.S || {};
+  S.db = firebase.firestore();
+  S.storage = firebase.storage(); // Dùng cái này nếu bạn có code upload ảnh
+
+  console.log("🔥 Đã kết nối Firebase Cloud Database!");
+</script>
 </body>
 </html>
