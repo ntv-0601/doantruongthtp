@@ -1060,11 +1060,11 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
   async function compressImage(file){
     if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) return file;
     let bmp=null; try{ bmp=await createImageBitmap(file); }catch(e){ return file; }
-    const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+    const sc=Math.min(1,900/Math.max(bmp.width,bmp.height));
     if (sc===1 && file.size<1200000) return file;
     const c=document.createElement("canvas"); c.width=Math.round(bmp.width*sc); c.height=Math.round(bmp.height*sc);
     c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
-    return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",0.82));
+    return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",0.7));
   }
   async function uploadMedia(files, onStep){
     const out=[], errs=[]; let i=0;
@@ -1075,8 +1075,9 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
       try{
         const blob = isI? await compressImage(f) : f;
         if (blob.size>MAX_FILE){ errs.push(f.name+": lớn hơn 20 MB, hãy cắt ngắn hoặc giảm chất lượng video"); continue; }
+        if (blob.size > 850000){ errs.push(f.name+": file quá nặng so với gói miễn phí (tối đa 850KB). Hãy dùng ảnh nhẹ hoặc gắn link video."); continue; }
         const r=await S.assets.upload(blob);
-        out.push({id:r.id, kind:isV?"video":"image"});
+        out.push({id:r.id, kind:isV?"video":"image", dataUrl:r.dataUrl});
       }catch(e){
         const c=e&&e.code;
         errs.push(f.name+": "+(c==="too_large"?"lớn hơn giới hạn cho phép":c==="unsupported_type"?"định dạng không hỗ trợ, dùng JPG, PNG hoặc MP4":c==="quota_or_state"?"hết dung lượng lưu trữ của trang":c==="not_granted"?"tài khoản này không có quyền tải lên":"chưa tải lên được"));
@@ -1097,7 +1098,7 @@ footer b{font:800 1.2rem var(--font-num);text-transform:uppercase;color:var(--in
       h("div",{class:"imp-tools"},h("label",{class:"btn btn-ghost",for:id,style:"cursor:pointer"},icon("i-img"),"Chọn ảnh, video"),input),
       thumbs,
       h("label",{class:"consent",for:id+"c"},cb,h("span",{text:"Ảnh, video không lộ rõ mặt học sinh, hoặc đã được học sinh và phụ huynh đồng ý cho đăng."})),
-      h("p",{class:"meter-note",text:"Ảnh được tự thu nhỏ trước khi tải lên. Video tối đa 20 MB một tệp (khoảng 1 phút quay 720p), nên dùng MP4."}));
+      h("p",{class:"meter-note",text:"Ảnh được tự động nén gọn để đồng bộ nhanh lên đám mây. Hỗ trợ ảnh và video ngắn dưới 850KB."}));
     pk.ok=()=>cb.checked;
     pk.reset=()=>{ pk.files=[]; input.value=""; thumbs.replaceChildren(); cb.checked=false; };
     return pickers[key]=pk;
