@@ -1,0 +1,295 @@
+rules_version = '2';
+
+// =====================================================================
+// LUẬT BẢO MẬT CƠ SỞ DỮ LIỆU — Cổng thông tin Đoàn trường THPT A
+// Luật này chạy trên MÁY CHỦ của Google (Firestore), không chạy trên
+// điện thoại người dùng. Dù ai đó sửa mã JavaScript trên trình duyệt,
+// mọi lệnh ghi vẫn phải qua đây. Đây là "người gác cổng" của hệ thống.
+//
+// Cách đọc: mỗi khối "match" là một bảng dữ liệu (collection).
+//   allow read   : ai được xem
+//   allow create : ai được thêm bản ghi mới
+//   allow update : ai được sửa bản ghi đã có
+//   allow delete : ai được xóa
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------- HÀM DÙNG CHUNG ----------------
+
+    // Đã đăng nhập bằng Firebase Authentication chưa?
+    function dangNhap() {
+      return request.auth != null;
+    }
+
+    // Đường dẫn tới hồ sơ (users/{uid}) của người đang gửi yêu cầu
+    function duongDanHoSo() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    // Có hồ sơ trong bảng users chưa? (tài khoản do Ban Chấp hành cấp)
+    function coHoSo() {
+      return dangNhap() && exists(duongDanHoSo());
+    }
+
+    // Đọc hồ sơ của chính người gửi yêu cầu
+    function hoSo() {
+      return get(duongDanHoSo()).data;
+    }
+
+    // Tài khoản không bị khóa
+    function khongKhoa() {
+      return coHoSo() && hoSo().get('khoa', false) == false;
+    }
+
+    // Vai trò: admin, codo, bithu, gvcn, member
+    function vaiTro() {
+      return hoSo().get('role', 'member');
+    }
+
+    function laAdmin() {
+      return khongKhoa() && vaiTro() in ['admin', 'owner', 'bch'];
+    }
+
+    function la(tenVaiTro) {
+      return khongKhoa() && vaiTro() == tenVaiTro;
+    }
+
+    function laChinhMinh(uid) {
+      return dangNhap() && request.auth.uid == uid;
+    }
+
+    // Lần sửa này chỉ thay đổi các trường được liệt kê
+    function chiDoi(cacTruong) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(cacTruong);
+    }
+
+    function soTrong(x, thap, cao) {
+      return x is number && x >= thap && x <= cao;
+    }
+
+    // Điểm thi đua tuần hợp lệ: 4 tiêu chí đúng thang 40/30/20/10
+    function diemTuanHopLe(d, ma) {
+      return soTrong(d.nenep, 0, 40)
+        && soTrong(d.hoctap, 0, 30)
+        && soTrong(d.phongtrao, 0, 20)
+        && soTrong(d.tinhnguyen, 0, 10)
+        && d.tuan is int && d.tuan >= 1 && d.tuan <= 40
+        && d.lop is string
+        && ma == 'T' + string(d.tuan) + '-' + d.lop;
+    }
+
+    // ---------------- TÀI KHOẢN ----------------
+    // Mật khẩu KHÔNG lưu ở đây. Mật khẩu do Firebase Authentication giữ (đã băm).
+    match /users/{uid} {
+      allow read: if laChinhMinh(uid) || laAdmin();
+      allow create: if laAdmin()
+        && request.resource.data.role in ['admin', 'codo', 'bithu', 'gvcn', 'member']
+        && !('password' in request.resource.data);
+      // Admin sửa vai trò, lớp, khóa tài khoản, cờ đồng ý nghiên cứu.
+      // Người dùng chỉ được tự đổi biệt danh của mình.
+      allow update: if (laAdmin() && !('password' in request.resource.data))
+        || (laChinhMinh(uid) && khongKhoa() && chiDoi(['bietDanh']));
+      allow delete: if laAdmin();
+    }
+
+    // ---------------- DỮ LIỆU CÔNG KHAI ----------------
+    match /activities/{id} {
+      allow read: if true;
+      allow write: if laAdmin();
+    }
+
+    match /news/{id} {
+      allow read: if true;
+      allow write: if laAdmin();
+    }
+
+    // ---------------- THI ĐUA TUẦN ----------------
+    // Bảng điểm chính thức. Chỉ Ban Chấp hành ghi đủ 4 tiêu chí.
+    // Cờ đỏ chỉ được sửa cột Nề nếp (3 cột còn lại phải giữ nguyên).
+    match /diemtuan/{ma} {
+      allow read: if true;
+      allow create: if diemTuanHopLe(request.resource.data, ma)
+        && (laAdmin()
+            || (la('codo')
+                && request.resource.data.hoctap == 0
+                && request.resource.data.phongtrao == 0
+                && request.resource.data.tinhnguyen == 0));
+      allow update: if diemTuanHopLe(request.resource.data, ma)
+        && (laAdmin()
+            || (la('codo') && chiDoi(['nenep', 'updatedAt', 'source'])));
+      allow delete: if laAdmin();
+    }
+
+    // Phiếu tự chấm: bí thư chỉ gửi cho đúng chi đoàn của mình.
+    match /dexuat/{uid} {
+      allow read: if dangNhap();
+      allow write: if laAdmin()
+        || (laChinhMinh(uid)
+            && (la('codo')
+                || (la('bithu') && request.resource.data.lop == hoSo().lop)));
+    }
+
+    // Xác nhận của GVCN: chỉ cho lớp mình chủ nhiệm.
+    match /xacnhan/{uid} {
+      allow read: if dangNhap();
+      allow write: if laAdmin()
+        || (laChinhMinh(uid) && la('gvcn') && request.resource.data.lop == hoSo().lop);
+    }
+
+    match /vaitro/{uid} {
+      allow read: if dangNhap();
+      allow write: if laAdmin();
+    }
+
+    match /yeucau/{uid} {
+      allow read, write: if laAdmin() || laChinhMinh(uid);
+    }
+
+    // ---------------- TRỰC TUẦN ----------------
+    // Cờ đỏ chỉ được ghi kết quả trực tuần và ảnh minh chứng.
+    match /phancong/{ma} {
+      allow read: if true;
+      allow create, delete: if laAdmin();
+      allow update: if laAdmin()
+        || (la('codo') && chiDoi(['ketQua', 'media']));
+    }
+
+    // ---------------- ĐĂNG KÝ HOẠT ĐỘNG ----------------
+    match /registrations/{uid} {
+      allow read: if dangNhap();
+      allow write: if laAdmin() || (laChinhMinh(uid) && khongKhoa());
+    }
+
+    // ---------------- ĐIỂM DANH BẰNG MÃ QR ----------------
+    // Phiên QR của một hoạt động. Mã hiện tại BÍ MẬT: chỉ Ban Chấp hành đọc được.
+    // Máy chiếu QR (của BCH) đổi mã mỗi 30 giây.
+    match /qrPhien/{actId} {
+      allow read, write: if laAdmin();
+    }
+
+    // Mã QR còn hiệu lực:
+    //  - trùng mã hiện tại và mã mới đổi chưa quá 60 giây, hoặc
+    //  - trùng mã ngay trước đó nhưng vừa đổi chưa quá 30 giây (cho người quét chậm).
+    // Lệnh get() trong luật được đọc qrPhien dù người dùng không có quyền đọc.
+    function maQrHopLe(actId, ma) {
+      return exists(/databases/$(database)/documents/qrPhien/$(actId))
+        && get(/databases/$(database)/documents/qrPhien/$(actId)).data.mo == true
+        && (
+          (ma == get(/databases/$(database)/documents/qrPhien/$(actId)).data.code
+            && request.time < get(/databases/$(database)/documents/qrPhien/$(actId)).data.doiLuc + duration.value(60, 's'))
+          || (ma == get(/databases/$(database)/documents/qrPhien/$(actId)).data.codeTruoc
+            && request.time < get(/databases/$(database)/documents/qrPhien/$(actId)).data.doiLuc + duration.value(30, 's'))
+        );
+    }
+
+    function diemCuaHoatDong(actId) {
+      return get(/databases/$(database)/documents/activities/$(actId)).data.get('points', 0);
+    }
+
+    // Mỗi lượt điểm danh có mã = <mã hoạt động>_<mã tài khoản>
+    // nên mỗi người chỉ điểm danh được 1 lần cho mỗi hoạt động.
+    match /checkIn/{ma} {
+      allow read: if laAdmin()
+        || (dangNhap() && resource.data.uid == request.auth.uid);
+      allow create: if khongKhoa()
+        && request.resource.data.keys().hasOnly(['uid', 'actId', 'lop', 'code', 'luc', 'diem'])
+        && request.resource.data.uid == request.auth.uid
+        && ma == request.resource.data.actId + '_' + request.auth.uid
+        && request.resource.data.lop == hoSo().get('lop', '')
+        && request.resource.data.luc == request.time
+        && request.resource.data.diem == diemCuaHoatDong(request.resource.data.actId)
+        && maQrHopLe(request.resource.data.actId, request.resource.data.code);
+      // Ban Chấp hành duyệt lượt nghi ngờ hoặc xóa lượt sai.
+      allow update, delete: if laAdmin();
+    }
+
+    // ---------------- NHẬT KÝ ĐIỂM CÁ NHÂN (BẤT BIẾN) ----------------
+    // Không ai được sửa hay xóa một dòng đã ghi, kể cả Ban Chấp hành.
+    // Muốn trừ điểm sai thì ghi thêm một dòng điều chỉnh có lý do.
+    function dongDieuChinhHopLe(d) {
+      return laAdmin()
+        && d.nguon == 'dieuchinh'
+        && d.uid is string
+        && soTrong(d.diem, -50, 50)
+        && d.lyDo is string && d.lyDo.size() >= 5
+        && d.boi == request.auth.uid
+        && d.luc == request.time;
+    }
+
+    function dongQrHopLe(ma, d) {
+      return khongKhoa()
+        && d.nguon == 'qr'
+        && d.uid == request.auth.uid
+        && ma == 'qr_' + d.actId + '_' + request.auth.uid
+        && d.luc == request.time
+        && getAfter(/databases/$(database)/documents/checkIn/$(d.actId + '_' + request.auth.uid)).data.uid == request.auth.uid
+        && d.diem == getAfter(/databases/$(database)/documents/checkIn/$(d.actId + '_' + request.auth.uid)).data.diem;
+    }
+
+    match /diemLog/{ma} {
+      allow read: if laAdmin()
+        || (dangNhap() && resource.data.uid == request.auth.uid);
+      allow create: if dongDieuChinhHopLe(request.resource.data)
+        || dongQrHopLe(ma, request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // ---------------- GAME "THOÁT BẪY LỪA ĐẢO" ----------------
+    // Đáp án bài kiểm tra trước/sau (vị trí đáp án đúng, đếm từ 0) phải KHỚP với
+    // js/game-kichban.js. Sửa câu hỏi thì sửa cả hai nơi.
+    // Máy chủ tự chấm lại để số liệu nghiên cứu không bị sửa từ trình duyệt.
+    function dapAn(de) {
+      return de == 'A' ? [1, 1, 1, 1, 1, 1, 1, 1, 1, 2] : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+    }
+    function cau(b, i) {
+      return b.traLoi[i] == dapAn(b.de)[i] ? 1 : 0;
+    }
+    function diemTinhLai(b) {
+      return cau(b, 0) + cau(b, 1) + cau(b, 2) + cau(b, 3) + cau(b, 4)
+        + cau(b, 5) + cau(b, 6) + cau(b, 7) + cau(b, 8) + cau(b, 9);
+    }
+    function baiHopLe(b) {
+      return b.keys().hasOnly(['de', 'diem', 'traLoi', 'luc'])
+        && b.de in ['A', 'B']
+        && b.traLoi is list && b.traLoi.size() == 10
+        && b.luc == request.time
+        && b.diem == diemTinhLai(b);
+    }
+
+    // Mỗi người: 1 bài đầu vào, 1 bài đầu ra (đề khác đề đầu vào), 1 phiếu hài lòng.
+    // Đã nộp thì không sửa, không làm lại được.
+    match /khaoSat/{uid} {
+      allow read: if laChinhMinh(uid) || laAdmin();
+      allow create: if laChinhMinh(uid) && khongKhoa()
+        && request.resource.data.keys().hasOnly(['truoc'])
+        && baiHopLe(request.resource.data.truoc);
+      allow update: if laChinhMinh(uid) && khongKhoa() && (
+          (!('sau' in resource.data)
+            && chiDoi(['sau'])
+            && baiHopLe(request.resource.data.sau)
+            && request.resource.data.sau.de != resource.data.truoc.de)
+          || (('sau' in resource.data) && !('hailong' in resource.data)
+            && chiDoi(['hailong'])
+            && soTrong(request.resource.data.hailong.diem, 1, 5)
+            && soTrong(request.resource.data.hailong.tutin, 1, 5))
+        );
+    }
+
+    // Mỗi lượt chơi một phòng: chỉ thêm, không sửa, không xóa.
+    match /gameLuot/{id} {
+      allow read: if laAdmin()
+        || (dangNhap() && resource.data.uid == request.auth.uid);
+      allow create: if khongKhoa()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.phong in ['p1', 'p2', 'p3', 'p4', 'p5']
+        && soTrong(request.resource.data.diem, 0, 64)
+        && request.resource.data.chiTiet is list && request.resource.data.chiTiet.size() <= 8
+        && request.resource.data.luc == request.time;
+      allow update, delete: if false;
+    }
+
+    // Bảng nào không có trong danh sách trên thì mặc định bị chặn hoàn toàn.
+  }
+}
