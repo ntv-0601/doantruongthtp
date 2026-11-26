@@ -68,7 +68,7 @@
 .game-overlay{position:fixed;inset:0;z-index:72;background:var(--paper);overflow:auto;display:grid;grid-template-rows:auto 1fr}
 .g-dau{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--field);color:#fff}
 .g-dau b{font:800 1rem/1.2 var(--font-num);text-transform:uppercase}
-.g-dau .btn{background:#fff}
+.g-dau .btn{background:#fff;color:#0B2552;border-color:#fff}
 .g-noi{width:min(560px,100%);margin:0 auto;padding:14px 16px 40px;display:grid;gap:12px;align-content:start}
 .g-thanh{display:flex;align-items:center;gap:10px}
 .g-tien{display:flex;gap:4px;flex:1}
@@ -108,10 +108,15 @@
 .g-kt{display:grid;gap:14px}
 .g-kt fieldset{border:1.5px dashed var(--stitch);border-radius:10px;padding:10px 12px;display:grid;gap:6px;margin:0}
 .g-kt legend{font-weight:700;padding:0 4px}
-.g-lc{display:flex;gap:8px;align-items:flex-start;line-height:1.4;cursor:pointer}
-.g-lc input{margin-top:3px}
-.g-sao{display:flex;gap:6px}
-.g-sao label{display:grid;justify-items:center;gap:2px;cursor:pointer;padding:6px 10px;border:1.5px solid var(--stitch);border-radius:8px}
+/* Nút chọn (radio) trong bài kiểm tra: ghi đè kiểu ô nhập chung của trang (rộng 100%) */
+.g-kt input[type=radio]{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;border:0;box-shadow:none;accent-color:var(--field)}
+.g-lc{display:flex;gap:10px;align-items:flex-start;justify-content:flex-start;text-align:left;line-height:1.45;cursor:pointer;padding:8px 10px;border-radius:8px;font:400 1rem var(--font-body);text-transform:none;letter-spacing:0;color:var(--ink)}
+.g-lc span{flex:1;min-width:0}
+.g-lc:hover{background:rgba(26,111,176,.08)}
+.g-lc:has(input:checked){background:rgba(26,111,176,.14)}
+.g-kt legend{color:var(--ink);font:700 1rem/1.4 var(--font-body);text-transform:none;letter-spacing:0}
+.g-sao{display:flex;gap:6px;flex-wrap:wrap}
+.g-sao label{display:grid;justify-items:center;gap:2px;cursor:pointer;padding:6px 12px;border:1.5px solid var(--stitch);border-radius:8px;color:var(--ink);font:600 1rem var(--font-body)}
 .g-the{display:grid;gap:6px;justify-items:center;text-align:center;padding:24px 18px;border-radius:18px;background:linear-gradient(135deg,#14558C,#1A6FB0);color:#fff}
 .g-the .label{color:#FFE58F}
 .g-the-ten{font:900 clamp(1.6rem,6vw,2.2rem)/1.05 var(--font-num);text-transform:uppercase}
