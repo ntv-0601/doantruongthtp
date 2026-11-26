@@ -20,7 +20,39 @@
   const fv = () => firebase.firestore.FieldValue;
 
   // Dữ liệu game của người đang dùng
-  const G = { khaoSat: null, luot: [], tatCaKhaoSat: [], tatCaLuot: [], huyNghe: [] };
+  const G = { khaoSat: null, luot: [], tatCaKhaoSat: [], tatCaLuot: [], huyNghe: [], duyet: {}, ngheDuyet: null };
+
+  /* ---------------- NGÂN HÀNG TÌNH HUỐNG ----------------
+     Toàn bộ tình huống = 40 thẻ gốc trong game-kichban.js + các thẻ do AI sinh
+     trong game-nganhang.js. Game chỉ rút những thẻ giáo viên đã DUYỆT
+     (trạng thái lưu ở bảng duyetTH/{mãThẻ} trên Firestore).               */
+  function nganHang() {
+    const goc = [];
+    KB().phong.forEach((p) => p.the.forEach((t) => goc.push(Object.assign({ phong: p.ma, that: false, nguon: "Bộ gốc" }, t))));
+    return goc.concat(window.GAME_NGANHANG || []);
+  }
+  const trangThai = (id) => (G.duyet[id] && G.duyet[id].trangThai) || "cho";
+  const theDaDuyet = (maPhong) => nganHang().filter((t) => t.phong === maPhong && trangThai(t.id) === "duyet");
+  const SO_THE = 8; // số tình huống mỗi lượt chơi
+
+  // Rút 8 thẻ: cố gắng có 2 tình huống thật, 2 thẻ soi, còn lại ngẫu nhiên
+  function rutThe(kho) {
+    const lay = (loc, n, da) => tron(kho.filter((t) => loc(t) && !da.includes(t))).slice(0, n);
+    const chon = [];
+    chon.push(...lay((t) => t.that, 2, chon));
+    chon.push(...lay((t) => t.loai === "soi", 2, chon));
+    chon.push(...lay(() => true, SO_THE - chon.length, chon));
+    return tron(chon);
+  }
+
+  // Lắng nghe trạng thái duyệt (ai cũng đọc được, kể cả khách)
+  function ngheDuyet() {
+    if (G.ngheDuyet || !window.DT) return;
+    G.ngheDuyet = DT.db.collection("duyetTH").onSnapshot((snap) => {
+      const m = {}; snap.docs.forEach((d) => (m[d.id] = d.data())); G.duyet = m; render();
+      const el = document.getElementById("duyet-overlay-body"); if (el && G.veDuyet) G.veDuyet();
+    }, () => {});
+  }
 
   /* ---------------- TIỆN ÍCH ---------------- */
   function tron(mang) { const a = mang.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -63,6 +95,7 @@
   /* ---------------- BẢN ĐỒ PHÒNG (trên trang chính) ---------------- */
   function render() {
     if (!window.DT || !KB()) return;
+    ngheDuyet();
     const { S, h, $ } = DT;
     const box = $("game-box"); if (!box) return;
     box.replaceChildren();
@@ -82,7 +115,8 @@
       h("p", { text: kb.moDau }),
       dangNhap ? null : h("p", { class: "meter-note", text: "Bạn đang chơi ở chế độ khách: tiến độ chỉ lưu trên máy này. Đăng nhập để làm bài kiểm tra và nhận thẻ." }),
       daLamTruoc() ? h("p", { class: "meter-note", text: "Điểm đầu vào: " + G.khaoSat.truoc.diem + "/10" + (daLamSau() ? " · Điểm đầu ra: " + G.khaoSat.sau.diem + "/10" : "") }) : null,
-      h("div", { class: "row-btn" }, buoc)));
+      h("div", { class: "row-btn" }, buoc,
+        (S.admin || (S.currentUser && S.currentUser.role === "gvcn")) ? h("button", { class: "btn btn-ghost", type: "button", onclick: moDuyet }, "Duyệt ngân hàng tình huống") : null)));
 
     const ban = h("div", { class: "game-map" });
     kb.phong.forEach((p, i) => {
@@ -91,7 +125,8 @@
         h("span", { class: "so", text: String(i + 1) }),
         h("b", { text: p.ten }),
         h("small", { text: p.moTa }),
-        h("span", { class: "tt", text: !mo ? "Đạt " + kb.nguongQua + "/64 ở phòng trước để mở" : cao < 0 ? "Chưa chơi" : "Cao nhất " + cao + "/64" + (qua ? " · Đã qua" : "") })));
+        h("span", { class: "tt", text: !mo ? "Đạt " + kb.nguongQua + "/64 ở phòng trước để mở" : theDaDuyet(p.ma).length < SO_THE ? "Đang chờ giáo viên duyệt tình huống" : cao < 0 ? "Chưa chơi" : "Cao nhất " + cao + "/64" + (qua ? " · Đã qua" : "") }),
+        h("small", { class: "kho", text: theDaDuyet(p.ma).length + " tình huống đã duyệt" })));
     });
     box.append(ban);
     renderAdmin();
@@ -114,7 +149,7 @@
   // Vẽ "màn hình điện thoại" mô phỏng tin nhắn
   function veDienThoai(the, cheDoSoi) {
     const { h } = DT;
-    const dt = h("div", { class: "phone k-" + the.kenh },
+    const dt = h("div", { class: "phone k-" + the.kenh, "data-the": the.id },
       h("div", { class: "ph-dau" }, h("span", { class: "ph-kenh", text: ICON_KENH[the.kenh] || "" }), h("b", { text: the.tu }), the.phu ? h("small", { text: the.phu }) : null));
     const than = h("div", { class: "ph-than" });
     const cacDoan = [];
@@ -145,8 +180,14 @@
     const { h, toast } = DT;
     const p = KB().phong[i];
     if (!p || !moKhoa(i)) { toast("Phòng này đang khóa."); return; }
-    const noi = moLopPhu("Phòng " + (i + 1) + " · " + p.ten);
-    const ds = p.the;
+    const kho = theDaDuyet(p.ma);
+    let xemTruoc = false, ds;
+    if (kho.length >= SO_THE) ds = rutThe(kho);
+    else if (DT.S.admin || (DT.S.currentUser && DT.S.currentUser.role === "gvcn")) {
+      // Giáo viên, BCH xem trước khi chưa duyệt đủ: rút từ toàn bộ ngân hàng, KHÔNG lưu kết quả
+      xemTruoc = true; ds = rutThe(nganHang().filter((t) => t.phong === p.ma && trangThai(t.id) !== "loai"));
+    } else { toast("Phòng " + (i + 1) + " đang chờ giáo viên duyệt đủ " + SO_THE + " tình huống."); return; }
+    const noi = moLopPhu("Phòng " + (i + 1) + " · " + p.ten + (xemTruoc ? " (xem trước)" : ""));
     const ketQua = [];   // {id, d}
     let viTri = 0;
 
@@ -169,7 +210,8 @@
         const tong = ketQua.reduce((s, x) => s + x.d, 0);
         diemEl.textContent = tong + " điểm";
         vungPhanHoi.append(
-          h("div", { class: "g-kq " + (d === KB().diemMoiThe ? "dung" : d > 0 ? "nua" : "sai") }, h("b", { text: d === KB().diemMoiThe ? "Chính xác! +" + d : d > 0 ? "Gần đúng +" + d : "Chưa đúng +0" }), loiGiai),
+          h("div", { class: "g-kq " + (d === KB().diemMoiThe ? "dung" : d > 0 ? "nua" : "sai") }, h("b", { text: d === KB().diemMoiThe ? "Chính xác! +" + d : d > 0 ? "Gần đúng +" + d : "Chưa đúng +0" }),
+            h("span", { class: "g-nhan " + (the.that ? "that" : "gia"), text: the.that ? "Đây là tình huống THẬT, an toàn" : "Đây là tình huống LỪA ĐẢO" }), loiGiai),
           h("p", { class: "g-hoc" }, h("b", { text: "Ghi nhớ: " }), the.hoc),
           h("button", { class: "btn btn-go", type: "button", onclick: () => { viTri++; viTri < ds.length ? veThe() : ketThuc(); } }, viTri + 1 < ds.length ? "Tình huống tiếp" : "Xem kết quả"));
         vungPhanHoi.querySelector("button").focus();
@@ -215,7 +257,8 @@
       const qua = tong >= kb.nguongQua;
       const { S, db, h, toast } = DT;
       // Lưu kết quả
-      if (S.currentUser) {
+      if (xemTruoc) { /* xem trước: không lưu */ }
+      else if (S.currentUser) {
         try {
           await db.collection("gameLuot").add({ uid: S.me, lop: S.currentUser.lop || "", phong: p.ma, diem: tong, chiTiet: ketQua, lan: G.luot.filter((l) => l.phong === p.ma).length + 1, luc: fv().serverTimestamp() });
         } catch (e) { toast("Chưa lưu được kết quả: " + DTAuth.loiTiengViet(e)); }
@@ -321,6 +364,88 @@
       h("button", { class: "btn btn-go", type: "button", onclick: () => { dongLopPhu(); render(); } }, "Đóng"));
   }
 
+  /* ---------------- GIÁO VIÊN DUYỆT NGÂN HÀNG TÌNH HUỐNG ----------------
+     Mỗi thẻ có 3 trạng thái: duyet (được đưa vào game), sua (cần sửa, kèm
+     ghi chú), loai (bỏ). Lưu ai duyệt, lúc nào để làm minh chứng.          */
+  const NHAN_TT = { cho: "Chờ duyệt", duyet: "Đã duyệt", sua: "Cần sửa", loai: "Loại" };
+  const loc = { phong: "p1", tt: "cho", viTri: 0 };
+
+  async function datTrangThai(the, tt, ghiChu) {
+    const { S, db, toast } = DT;
+    try {
+      await db.doc("duyetTH/" + the.id).set({ trangThai: tt, ghiChu: ghiChu || "", boi: S.me, ten: S.currentUser.hoTen || S.currentUser.username, luc: fv().serverTimestamp() });
+    } catch (e) { toast(DTAuth.loiTiengViet(e)); return false; }
+    return true;
+  }
+
+  function moDuyet() {
+    const { h } = DT;
+    const noi = moLopPhu("Duyệt ngân hàng tình huống");
+    noi.id = "duyet-overlay-body";
+    G.veDuyet = () => veDuyet(noi);
+    veDuyet(noi);
+  }
+
+  function veDuyet(noi) {
+    const { h, toast } = DT;
+    const kb = KB(), tatCa = nganHang();
+    const ds = tatCa.filter((t) => t.phong === loc.phong && (loc.tt === "tatca" || trangThai(t.id) === loc.tt));
+    if (loc.viTri >= ds.length) loc.viTri = Math.max(0, ds.length - 1);
+    const dem = (ma, tt) => tatCa.filter((t) => t.phong === ma && trangThai(t.id) === tt).length;
+
+    const chonPhong = h("select", { "aria-label": "Phòng" }, ...kb.phong.map((p, i) => h("option", { value: p.ma, selected: p.ma === loc.phong }, "Phòng " + (i + 1) + ": " + p.ten + " (" + dem(p.ma, "duyet") + " đã duyệt)")));
+    chonPhong.addEventListener("change", () => { loc.phong = chonPhong.value; loc.viTri = 0; veDuyet(noi); });
+    const chonTT = h("select", { "aria-label": "Trạng thái" }, ...[["cho", "Chờ duyệt"], ["sua", "Cần sửa"], ["duyet", "Đã duyệt"], ["loai", "Loại"], ["tatca", "Tất cả"]].map(([k, v]) => h("option", { value: k, selected: k === loc.tt }, v + (k === "tatca" ? "" : " (" + dem(loc.phong, k) + ")"))));
+    chonTT.addEventListener("change", () => { loc.tt = chonTT.value; loc.viTri = 0; veDuyet(noi); });
+
+    noi.replaceChildren(
+      h("p", { class: "meter-note", text: "Tổng " + tatCa.length + " tình huống · Đã duyệt " + tatCa.filter((t) => trangThai(t.id) === "duyet").length + ". Mỗi phòng cần ít nhất " + SO_THE + " tình huống đã duyệt thì học sinh mới chơi được; càng nhiều thì mỗi lượt càng khác nhau." }),
+      h("div", { class: "two" }, chonPhong, chonTT),
+      h("div", { class: "row-btn" }, h("button", { class: "btn btn-export", type: "button", onclick: xuatNganHang }, "Xuất danh sách để duyệt trên giấy (Excel)")));
+
+    if (!ds.length) { noi.append(h("p", { class: "g-hoc", text: "Không có tình huống nào trong mục này." })); return; }
+    const t = ds[loc.viTri];
+    const d = G.duyet[t.id];
+    const { dt } = veDienThoai(t, false);
+    const goiY = t.loai === "soi"
+      ? h("ul", { class: "g-giai" }, ...t.tin.flat().filter((x) => typeof x === "object" && x.n).map((x) => h("li", {}, h("b", { text: "\"" + x.t + "\": " }), x.g)))
+      : h("ul", { class: "g-giai" }, ...t.chon.map((c) => h("li", {}, h("b", { text: (c.dung ? "✔ ĐÚNG: " : "✘ ") + c.t }), h("br"), c.g)));
+    const ghi = h("input", { maxlength: "200", placeholder: "Ghi chú cho người sửa (bắt buộc khi chọn Cần sửa)", value: d && d.ghiChu ? d.ghiChu : "", "aria-label": "Ghi chú" });
+    const nut = (tt, nhan, cls) => h("button", { class: "btn " + cls, type: "button", onclick: async () => {
+      if (tt === "sua" && ghi.value.trim().length < 5) { toast("Ghi rõ cần sửa gì (ít nhất 5 ký tự)."); ghi.focus(); return; }
+      if (await datTrangThai(t, tt, ghi.value.trim())) { toast(NHAN_TT[tt] + ": " + t.id); if (loc.tt === "tatca" || loc.tt === tt) loc.viTri++; }
+    } }, nhan);
+
+    noi.append(...[
+      h("div", { class: "row-btn", style: "justify-content:space-between" },
+        h("button", { class: "btn btn-ghost", type: "button", disabled: loc.viTri === 0, onclick: () => { loc.viTri--; veDuyet(noi); } }, "‹ Trước"),
+        h("b", { text: (loc.viTri + 1) + "/" + ds.length }),
+        h("button", { class: "btn btn-ghost", type: "button", disabled: loc.viTri >= ds.length - 1, onclick: () => { loc.viTri++; veDuyet(noi); } }, "Sau ›")),
+      h("p", { class: "meter-note" }, h("b", { text: t.id }), " · " + (t.loai === "soi" ? "Soi dấu hiệu" : "Chọn cách xử lý") + " · ", h("span", { class: "g-nhan " + (t.that ? "that" : "gia"), text: t.that ? "Tình huống thật" : "Lừa đảo" }), " · Nguồn: " + (t.nguon || "")),
+      d ? h("p", { class: "meter-note", text: "Hiện tại: " + NHAN_TT[d.trangThai] + (d.ten ? " · " + d.ten : "") + (d.luc ? " · " + d.luc.toDate().toLocaleString("vi-VN") : "") + (d.ghiChu ? " · Ghi chú: " + d.ghiChu : "") }) : null,
+      dt,
+      h("p", { class: "g-hoi", text: t.hoi }),
+      goiY,
+      h("p", { class: "g-hoc" }, h("b", { text: "Ghi nhớ: " }), t.hoc),
+      ghi,
+      h("div", { class: "row-btn" }, nut("duyet", "Duyệt", "btn-go"), nut("sua", "Cần sửa", "btn-ghost"), nut("loai", "Loại", "btn-ghost"))].filter(Boolean));
+  }
+
+  function xuatNganHang() {
+    const { S, toast } = DT;
+    if (typeof XLSX === "undefined") { toast("Chưa tải được thư viện Excel."); return; }
+    const kb = KB();
+    const noiDung = (t) => t.tin.map((b) => (Array.isArray(b) ? b : [b]).map((x) => (typeof x === "string" ? x : "[" + x.t + "]")).join("")).join(" / ");
+    const dapAn = (t) => (t.loai === "soi" ? t.tin.flat().filter((x) => typeof x === "object" && x.n).map((x) => x.t).join(" | ") : (t.chon.find((c) => c.dung) || {}).t);
+    const rows = [["Mã", "Phòng", "Loại", "Thật/Lừa đảo", "Kênh", "Người gửi", "Nội dung", "Câu hỏi", "Đáp án đúng / dấu hiệu", "Ghi nhớ", "Nguồn", "Trạng thái", "Người duyệt", "Thời gian", "Ghi chú", "Ý kiến giáo viên (ghi tay)"]];
+    nganHang().forEach((t) => { const d = G.duyet[t.id] || {}; const p = kb.phong.find((x) => x.ma === t.phong) || {}; rows.push([t.id, p.ten, t.loai === "soi" ? "Soi" : "Chọn", t.that ? "Thật" : "Lừa đảo", t.kenh, t.tu, noiDung(t), t.hoi, dapAn(t), t.hoc, t.nguon || "", NHAN_TT[trangThai(t.id)], d.ten || "", d.luc ? d.luc.toDate().toLocaleString("vi-VN") : "", d.ghiChu || "", ""]); });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [8, 18, 6, 9, 9, 18, 60, 40, 40, 40, 24, 11, 16, 16, 24, 30].map((w) => ({ wch: w }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "NganHangTinhHuong");
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    S.dl.save({ filename: "NganHang_TinhHuong_" + new Date().toISOString().slice(0, 10) + ".xlsx", data: new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }) });
+  }
+
   /* ---------------- BAN CHẤP HÀNH: SỐ LIỆU NGHIÊN CỨU ---------------- */
   function renderAdmin() {
     const { S, h, $ } = DT;
@@ -369,8 +494,8 @@
     });
     const thongKe = {};
     Object.values(luotDau).forEach((l) => (l.chiTiet || []).forEach((x) => { const t = (thongKe[x.id] = thongKe[x.id] || { n: 0, dung: 0 }); t.n++; if (x.d === kb.diemMoiThe) t.dung++; }));
-    const th = [["Mã thẻ", "Phòng", "Loại", "Tình huống", "Số người (lượt đầu)", "Đúng hoàn toàn (%)"]];
-    kb.phong.forEach((p) => p.the.forEach((t) => { const s = thongKe[t.id] || { n: 0, dung: 0 }; th.push([t.id, p.ten, t.loai === "soi" ? "Soi dấu hiệu" : "Chọn cách xử lý", t.hoi.length > 80 ? t.tu + ": " + t.hoi.slice(0, 80) + "…" : t.tu + ": " + t.hoi, s.n, s.n ? Math.round((s.dung / s.n) * 1000) / 10 : ""]); }));
+    const th = [["Mã thẻ", "Phòng", "Loại", "Thật/Lừa đảo", "Tình huống", "Số lượt gặp (lượt đầu)", "Đúng hoàn toàn (%)"]];
+    nganHang().filter((t) => trangThai(t.id) === "duyet").forEach((t) => { const s = thongKe[t.id] || { n: 0, dung: 0 }; const p = kb.phong.find((x) => x.ma === t.phong) || {}; th.push([t.id, p.ten, t.loai === "soi" ? "Soi dấu hiệu" : "Chọn cách xử lý", t.that ? "Thật" : "Lừa đảo", t.tu + ": " + (t.hoi.length > 80 ? t.hoi.slice(0, 80) + "…" : t.hoi), s.n, s.n ? Math.round((s.dung / s.n) * 1000) / 10 : ""]); });
 
     // 4. Từng phòng
     const ph = [["Phòng", "Số người chơi", "Điểm TB lượt đầu (/64)", "Số người đã qua", "Số lượt chơi TB để qua"]];
@@ -389,5 +514,5 @@
     toast("Đã xuất dữ liệu game (" + dongY.size + " tài khoản có phiếu đồng ý).");
   }
 
-  window.DTGame = { render, khiDoiPhien, choiPhong, moKiemTra };
+  window.DTGame = { render, khiDoiPhien, choiPhong, moKiemTra, moDuyet, nganHang };
 })();

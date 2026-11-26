@@ -290,6 +290,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Giáo viên (GVCN) hoặc Ban Chấp hành duyệt từng tình huống của ngân hàng.
+    // Ai cũng đọc được (game cần biết thẻ nào đã duyệt); ghi phải kèm tên người duyệt.
+    match /duyetTH/{maThe} {
+      allow read: if true;
+      allow write: if (laAdmin() || la('gvcn'))
+        && request.resource.data.trangThai in ['duyet', 'sua', 'loai']
+        && request.resource.data.boi == request.auth.uid
+        && request.resource.data.luc == request.time;
+    }
+
     // Bảng nào không có trong danh sách trên thì mặc định bị chặn hoàn toàn.
   }
 }
