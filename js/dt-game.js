@@ -372,8 +372,15 @@
 
   async function datTrangThai(the, tt, ghiChu) {
     const { S, db, toast } = DT;
+    const u = S.currentUser || {};
     try {
-      await db.doc("duyetTH/" + the.id).set({ trangThai: tt, ghiChu: ghiChu || "", boi: S.me, ten: S.currentUser.hoTen || S.currentUser.username, luc: fv().serverTimestamp() });
+      await db.doc("duyetTH/" + the.id).set({
+        trangThai: tt,
+        ghiChu: ghiChu || "",
+        boi: S.me || u.id || "quantri",
+        ten: u.bietDanh || u.hoTen || u.maDoanVien || u.username || S.me || "Quản trị viên",
+        luc: fv().serverTimestamp()
+      });
     } catch (e) { toast(DTAuth.loiTiengViet(e)); return false; }
     return true;
   }
